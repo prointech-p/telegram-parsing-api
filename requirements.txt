@@ -3,3 +3,4 @@ uvicorn[gunicorn]
 telethon 
 g4f
 python-dotenv
+curl-cffi
