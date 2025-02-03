@@ -45,10 +45,10 @@ async def get_tg_posts(channel_username, posts_count):
 # Генерация текста согласно промпту
 def process_prompt(prompt):
     # Создаем новый event loop, если текущий уже используется
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    # loop = asyncio.get_event_loop()
+    # if loop.is_running():
+    #     loop = asyncio.new_event_loop()
+    #     asyncio.set_event_loop(loop)
         
     client1 = Client()
 
