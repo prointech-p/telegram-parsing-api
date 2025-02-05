@@ -73,11 +73,12 @@ def get_structured_data(raw_data):
         parts = line.split("===")
         if len(parts) == 5:
             result.append({
-                "name": parts[0].strip(),
-                "price": parts[1].strip(),
-                "date": parts[2].strip(),
-                "stock": parts[3].strip(),
-                "currency": parts[4].strip()
+                "brand": parts[0].strip(),
+                "name": parts[1].strip(),
+                "price": parts[2].strip(),
+                "date": parts[3].strip(),
+                "stock": parts[4].strip(),
+                "currency": parts[5].strip()
             })
     return result
 
