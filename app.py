@@ -71,7 +71,7 @@ def get_structured_data(raw_data):
     result = []
     for line in raw_data.split("\n"):
         parts = line.split("===")
-        if len(parts) == 5:
+        if len(parts) == 6:
             result.append({
                 "brand": parts[0].strip(),
                 "name": parts[1].strip(),
