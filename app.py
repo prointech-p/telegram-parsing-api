@@ -7,8 +7,10 @@ import os
 from dotenv import load_dotenv
 from g4f.client import Client 
 
+
 # Загружаем переменные из .env
 load_dotenv()
+
 
 # Инициализация FastAPI
 app = FastAPI()
@@ -68,7 +70,8 @@ def process_prompt(prompt):
     full_response = ""
 
     for chunk in response:
-        full_response += chunk.choices[0].delta.content  # Добавляем каждый кусок к переменной
+        if chunk.choices[0].delta.content:
+            full_response += chunk.choices[0].delta.content  # Добавляем каждый кусок к переменной
 
     # return response.choices[0].message.content
     return full_response
