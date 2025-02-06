@@ -83,7 +83,31 @@ def get_structured_data(raw_data):
     return result
 
 
-# Основная функция для парсинга
+# Основная функция для парсинга каждого поста отдельно
+async def parse_tg_channel_detail(channel_username, posts_count, base_prompt):
+    # Получаем посты из Telegram
+    posts = await get_tg_posts(channel_username, posts_count)
+    result = []
+    for post in posts:
+        post_str = "<Start_of_post>. " + post
+    
+        # Генерируем ответ с использованием AI
+        ai_response = process_prompt(f"{base_prompt} {post_str}")
+        
+        # Структурируем данные
+        parsed_data = get_structured_data(ai_response)
+
+        result.append({
+            'post': post_str,
+            'ai_response': ai_response,
+            'parsed_data': parsed_data
+        })
+    
+    # Возвращаем результат
+    return result
+
+
+# Основная функция для парсинга всех постов вместе
 async def parse_tg_channel(channel_username, posts_count, base_prompt):
     # Получаем посты из Telegram
     posts = await get_tg_posts(channel_username, posts_count)
@@ -109,6 +133,17 @@ async def parse_channel(request: ParseRequest):
     try:
         # Парсим данные
         result = await parse_tg_channel(request.channel_username, request.posts_count, request.base_prompt)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Маршрут для парсинга
+@app.post("/parse-tg-channel-detail")
+async def parse_channel(request: ParseRequest):
+    try:
+        # Парсим данные
+        result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
