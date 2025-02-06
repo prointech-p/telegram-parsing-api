@@ -29,6 +29,7 @@ class ParseRequest(BaseModel):
     channel_username: str
     posts_count: int
     base_prompt: str
+    ai_model: str
 
 
 # Функция для получения постов из канала Telegram
@@ -45,7 +46,7 @@ async def get_tg_posts(channel_username, posts_count):
 
 
 # Генерация текста согласно промпту
-def process_prompt(prompt):
+def process_prompt(prompt, ai_model):
     # Создаем новый event loop, если текущий уже используется
     # loop = asyncio.get_event_loop()
     # if loop.is_running():
@@ -55,16 +56,15 @@ def process_prompt(prompt):
     client1 = Client()
 
     response = client1.chat.completions.create(
-        # model="gpt-4o-mini", 
+        # model="gpt-4o-mini",
         model="gpt-4",
         messages=[
             {
-                "role": "user", 
+                "role": "user",
                 "content": prompt
-                }
+            }
             ],
         stream=True
-    # Add any other necessary parameters
     )
 
     full_response = ""
@@ -95,15 +95,19 @@ def get_structured_data(raw_data):
 
 
 # Основная функция для парсинга каждого поста отдельно
-async def parse_tg_channel_detail(channel_username, posts_count, base_prompt):
+async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai_model):
     # Получаем посты из Telegram
     posts = await get_tg_posts(channel_username, posts_count)
     result = []
     for post in posts:
         post_str = "<Start_of_post>. " + post
-    
-        # Генерируем ответ с использованием AI
-        ai_response = process_prompt(f"{base_prompt} {post_str}")
+
+        parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
+        ai_response = ""
+        for part in parts:
+               
+            # Генерируем ответ с использованием AI
+            ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
         
         # Структурируем данные
         parsed_data = get_structured_data(ai_response)
@@ -154,7 +158,7 @@ async def parse_channel(request: ParseRequest):
 async def parse_channel(request: ParseRequest):
     try:
         # Парсим данные
-        result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt)
+        result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -167,3 +171,4 @@ async def hello_world():
 
 # Запуск приложения через Uvicorn
 # uvicorn app:app --reload
+
