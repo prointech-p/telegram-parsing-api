@@ -102,12 +102,15 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
     for post in posts:
         post_str = "<Start_of_post>. " + post
 
-        parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
-        ai_response = ""
-        for part in parts:
+        ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
+
+        # parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
+       
+        # ai_response = ""
+        # for part in parts:
                
-            # Генерируем ответ с использованием AI
-            ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
+        #     # Генерируем ответ с использованием AI
+        #     ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
         
         # Структурируем данные
         parsed_data = get_structured_data(ai_response)
