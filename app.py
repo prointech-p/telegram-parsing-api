@@ -61,9 +61,17 @@ def process_prompt(prompt):
                 "content": prompt
                 }
             ],
+        stream=True
     # Add any other necessary parameters
     )
-    return response.choices[0].message.content
+
+    full_response = ""
+
+    for chunk in response:
+        full_response += chunk  # Добавляем каждый кусок к переменной
+
+    # return response.choices[0].message.content
+    return full_response
 
 
 # Преобразование в структурированные данные
