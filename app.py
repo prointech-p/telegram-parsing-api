@@ -104,13 +104,33 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
 
         ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
 
-        # parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
+        # Структурируем данные
+        parsed_data = get_structured_data(ai_response)
+
+        result.append({
+            'post': post_str,
+            'ai_response': ai_response,
+            'parsed_data': parsed_data
+        })
+    
+    # Возвращаем результат
+    return result
+
+
+# Основная функция для парсинга каждого поста отдельно ПО ЧАСТЯМ
+async def parse_tg_channel_by_parts(channel_username, posts_count, base_prompt, ai_model):
+    # Получаем посты из Telegram
+    posts = await get_tg_posts(channel_username, posts_count)
+    result = []
+    for post in posts:
+        post_str = "<Start_of_post>. " + post
+
+        parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
        
-        # ai_response = ""
-        # for part in parts:
-               
-        #     # Генерируем ответ с использованием AI
-        #     ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
+        ai_response = ""
+        for part in parts:
+            # Генерируем ответ с использованием AI
+            ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
         
         # Структурируем данные
         parsed_data = get_structured_data(ai_response)
@@ -162,6 +182,17 @@ async def parse_channel(request: ParseRequest):
     try:
         # Парсим данные
         result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+# Маршрут для парсинга
+@app.post("/parse-tg-channel-by-parts")
+async def parse_channel(request: ParseRequest):
+    try:
+        # Парсим данные
+        result = await parse_tg_channel_by_parts(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
