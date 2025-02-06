@@ -68,7 +68,7 @@ def process_prompt(prompt):
     full_response = ""
 
     for chunk in response:
-        full_response += chunk  # Добавляем каждый кусок к переменной
+        full_response += chunk.choices[0].delta.content  # Добавляем каждый кусок к переменной
 
     # return response.choices[0].message.content
     return full_response
