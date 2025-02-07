@@ -163,7 +163,7 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
         ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
 
     #     # Структурируем данные
-    #     parsed_data = get_structured_data(ai_response, post["date"])
+        parsed_data = get_structured_data(ai_response, post["date"])
 
         result.append({
             'post': post_str,
