@@ -54,9 +54,9 @@ def process_prompt(prompt, ai_model):
     # if loop.is_running():
     #     loop = asyncio.new_event_loop()
     #     asyncio.set_event_loop(loop)
-    print("start process_prompt")    
+   
     client1 = Client()
-    print("start client1.chat.completions.create")
+
     response = client1.chat.completions.create(
         # model="gpt-4o-mini",
         model="gpt-4",
@@ -70,15 +70,12 @@ def process_prompt(prompt, ai_model):
         stream=True
     )
 
-    print("finish client1.chat.completions.create")
-    pprint(response)
-
     full_response = ""
 
     for chunk in response:
         if chunk.choices[0].delta.content:
             full_response += chunk.choices[0].delta.content  # Добавляем каждый кусок к переменной
-    print("finish process_prompt")
+
     # return response.choices[0].message.content
     return full_response
 
@@ -128,7 +125,7 @@ async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, a
         for item in sub_posts:
             response = client1.chat.completions.create(
                 model="gpt-4",
-                provider=g4f.Provider.Copilot,
+                # provider=g4f.Provider.Copilot,
                 messages=[
                     {
                         "role": "user",
