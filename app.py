@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from g4f.client import Client 
 import g4f
+from pprint import pprint
 
 
 # Загружаем переменные из .env
@@ -70,6 +71,7 @@ def process_prompt(prompt, ai_model):
     )
 
     print("finish client1.chat.completions.create")
+    pprint(response)
 
     full_response = ""
 
