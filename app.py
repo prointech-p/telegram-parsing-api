@@ -6,6 +6,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from g4f.client import Client 
+import g4f
 
 
 # Загружаем переменные из .env
@@ -41,7 +42,7 @@ async def get_tg_posts(channel_username, posts_count):
                 sender_id: {message.sender_id}
                 текст сообщения: {message.text}
             """
-            posts.append(post)
+            posts.append({"text": post, "date": message.date.strftime("%Y-%m-%d")})
     return posts
 
 
@@ -58,6 +59,7 @@ def process_prompt(prompt, ai_model):
     response = client1.chat.completions.create(
         # model="gpt-4o-mini",
         model="gpt-4",
+        provider=g4f.Provider.Copilot,
         messages=[
             {
                 "role": "user",
@@ -78,19 +80,70 @@ def process_prompt(prompt, ai_model):
 
 
 # Преобразование в структурированные данные
-def get_structured_data(raw_data):
+def get_structured_data(raw_data, data_date):
     result = []
     for line in raw_data.split("\n"):
         parts = line.split("===")
-        if len(parts) == 6:
+        if len(parts) == 5:
             result.append({
                 "brand": parts[0].strip(),
                 "name": parts[1].strip(),
                 "price": parts[2].strip(),
-                "date": parts[3].strip(),
-                "stock": parts[4].strip(),
-                "currency": parts[5].strip()
+                "date": data_date,
+                "stock": parts[3].strip(),
+                "currency": parts[4].strip()
             })
+    return result
+
+
+# Основная функция для парсинга каждого поста отдельно
+async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, ai_model):
+    # Получаем посты из Telegram
+    posts = await get_tg_posts(channel_username, posts_count)
+    result = []
+    for post in posts:
+        post_lines = post["text"].splitlines()
+        data_date = post["date"]
+        sub_posts = []
+
+        cities = ["Moscow", "Shenzhen", "Hongkong"]
+
+        n = 0
+        start_pos = 0
+        for i in range(0, len(post_lines)):
+            n += 1
+            for city in cities:
+                if (city in (post_lines[i]) and n > 10) or (i == len(post_lines) - 1):
+                    data_sub_str = "\n".join(post_lines[start_pos:i]) 
+                    sub_posts.append(data_sub_str)
+                    start_pos = i
+        
+        ai_response = ""
+        for item in sub_posts:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                provider=g4f.Provider.Copilot,
+                messages=[
+                    {
+                        # "role": "user",
+                        "role": "assistant",
+                        "content": base_prompt + ' ' + item
+                    }
+                    ]
+            )
+
+            ai_response = ai_response + response.choices[0].message["content"]
+
+        # Структурируем данные
+        parsed_data = get_structured_data(ai_response, data_date)
+
+        result.append({
+            'post': post["text"],
+            'ai_response': ai_response,
+            'parsed_data': parsed_data
+        })
+    
+    # Возвращаем результат
     return result
 
 
@@ -100,12 +153,12 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
     posts = await get_tg_posts(channel_username, posts_count)
     result = []
     for post in posts:
-        post_str = "<Start_of_post>. " + post
+        post_str = "<Start_of_post>. " + post["text"]
 
         ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
 
         # Структурируем данные
-        parsed_data = get_structured_data(ai_response)
+        parsed_data = get_structured_data(ai_response, post["date"])
 
         result.append({
             'post': post_str,
@@ -118,62 +171,62 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
 
 
 # Основная функция для парсинга каждого поста отдельно ПО ЧАСТЯМ
-async def parse_tg_channel_by_parts(channel_username, posts_count, base_prompt, ai_model):
-    # Получаем посты из Telegram
-    posts = await get_tg_posts(channel_username, posts_count)
-    result = []
-    for post in posts:
-        post_str = "<Start_of_post>. " + post
+# async def parse_tg_channel_by_parts(channel_username, posts_count, base_prompt, ai_model):
+#     # Получаем посты из Telegram
+#     posts = await get_tg_posts(channel_username, posts_count)
+#     result = []
+#     for post in posts:
+#         post_str = "<Start_of_post>. " + post["text"]
 
-        parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
+#         parts = post_str.split("\n\n")  # Разделяем по двойным переводам строки
        
-        ai_response = ""
-        for part in parts:
-            # Генерируем ответ с использованием AI
-            ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
+#         ai_response = ""
+#         for part in parts:
+#             # Генерируем ответ с использованием AI
+#             ai_response = ai_response + "\nNEW_PART\n" + process_prompt(f"{base_prompt} {part}", ai_model)
         
-        # Структурируем данные
-        parsed_data = get_structured_data(ai_response)
+#         # Структурируем данные
+#         parsed_data = get_structured_data(ai_response)
 
-        result.append({
-            'post': post_str,
-            'ai_response': ai_response,
-            'parsed_data': parsed_data
-        })
+#         result.append({
+#             'post': post_str,
+#             'ai_response': ai_response,
+#             'parsed_data': parsed_data
+#         })
     
-    # Возвращаем результат
-    return result
+#     # Возвращаем результат
+#     return result
 
 
 # Основная функция для парсинга всех постов вместе
-async def parse_tg_channel(channel_username, posts_count, base_prompt):
-    # Получаем посты из Telegram
-    posts = await get_tg_posts(channel_username, posts_count)
-    posts_str = "<Start_of_message>. ".join(posts)
+# async def parse_tg_channel(channel_username, posts_count, base_prompt):
+#     # Получаем посты из Telegram
+#     posts = await get_tg_posts(channel_username, posts_count)
+#     posts_str = "<Start_of_message>. ".join(posts)
     
-    # Генерируем ответ с использованием AI
-    ai_response = process_prompt(f"{base_prompt} {posts_str}")
+#     # Генерируем ответ с использованием AI
+#     ai_response = process_prompt(f"{base_prompt} {posts_str}")
     
-    # Структурируем данные
-    parsed_data = get_structured_data(ai_response)
+#     # Структурируем данные
+#     parsed_data = get_structured_data(ai_response)
     
-    # Возвращаем результат
-    return {
-        'posts': posts_str,
-        'ai_response': ai_response,
-        'parsed_data': parsed_data
-    }
+#     # Возвращаем результат
+#     return {
+#         'posts': posts_str,
+#         'ai_response': ai_response,
+#         'parsed_data': parsed_data
+#     }
 
 
 # Маршрут для парсинга
-@app.post("/parse-tg-channel")
-async def parse_channel(request: ParseRequest):
-    try:
-        # Парсим данные
-        result = await parse_tg_channel(request.channel_username, request.posts_count, request.base_prompt)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.post("/parse-tg-channel")
+# async def parse_channel(request: ParseRequest):
+#     try:
+#         # Парсим данные
+#         result = await parse_tg_channel(request.channel_username, request.posts_count, request.base_prompt)
+#         return result
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 # Маршрут для парсинга
@@ -181,21 +234,24 @@ async def parse_channel(request: ParseRequest):
 async def parse_channel(request: ParseRequest):
     try:
         # Парсим данные
-        result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
+        if request.channel_username == "":
+            result = await parse_tg_channel_scminer(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
+        else:
+            result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 
 # Маршрут для парсинга
-@app.post("/parse-tg-channel-by-parts")
-async def parse_channel(request: ParseRequest):
-    try:
-        # Парсим данные
-        result = await parse_tg_channel_by_parts(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.post("/parse-tg-channel-by-parts")
+# async def parse_channel(request: ParseRequest):
+#     try:
+#         # Парсим данные
+#         result = await parse_tg_channel_by_parts(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
+#         return result
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 # Стартовое сообщение
