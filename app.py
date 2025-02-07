@@ -60,7 +60,7 @@ def process_prompt(prompt, ai_model):
     response = client1.chat.completions.create(
         # model="gpt-4o-mini",
         model="gpt-4",
-        provider=g4f.Provider.Copilot,
+        # provider=g4f.Provider.Copilot,
         messages=[
             {
                 "role": "user",
