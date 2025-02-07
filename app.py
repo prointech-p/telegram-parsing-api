@@ -154,19 +154,19 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
     # Получаем посты из Telegram
     posts = await get_tg_posts(channel_username, posts_count)
     result = ["test"]
-    # for post in posts:
-    #     post_str = "<Start_of_post>. " + post["text"]
+    for post in posts:
+        post_str = "<Start_of_post>. " + post["text"]
 
-    #     ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
+        ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
 
     #     # Структурируем данные
     #     parsed_data = get_structured_data(ai_response, post["date"])
 
-    #     result.append({
-    #         'post': post_str,
-    #         'ai_response': ai_response,
-    #         'parsed_data': parsed_data
-    #     })
+        result.append({
+            'post': post_str,
+            'ai_response': ai_response,
+            # 'parsed_data': parsed_data
+        })
     
     # Возвращаем результат
     return result
