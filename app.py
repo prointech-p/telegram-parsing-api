@@ -100,7 +100,7 @@ def get_structured_data(raw_data, data_date):
 # Основная функция для парсинга каждого поста отдельно
 async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, ai_model):
     print('SCMiner')
-    client1 = Client()
+    # client1 = Client()
     # Получаем посты из Telegram
     posts = await get_tg_posts(channel_username, posts_count)
     result = []
@@ -123,19 +123,21 @@ async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, a
         
         ai_response = ""
         for item in sub_posts:
-            response = client1.chat.completions.create(
-                model="gpt-4",
-                # provider=g4f.Provider.Copilot,
-                messages=[
-                    {
-                        "role": "user",
-                        # "role": "assistant",
-                        "content": base_prompt + ' ' + item
-                    }
-                    ]
-            )
+            response_text = process_prompt(base_prompt + ' ' + item, ai_model)
+            # response = client1.chat.completions.create(
+            #     model="gpt-4",
+            #     # provider=g4f.Provider.Copilot,
+            #     messages=[
+            #         {
+            #             "role": "user",
+            #             # "role": "assistant",
+            #             "content": base_prompt + ' ' + item
+            #         }
+            #         ]
+            # )
 
-            ai_response = ai_response + response.choices[0].message.content
+            # ai_response = ai_response + response.choices[0].message.content
+            ai_response = ai_response + response_text
 
         # Структурируем данные
         parsed_data = get_structured_data(ai_response, data_date)
