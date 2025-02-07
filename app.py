@@ -168,7 +168,7 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
         result.append({
             'post': post_str,
             'ai_response': ai_response,
-            # 'parsed_data': parsed_data
+            'parsed_data': parsed_data
         })
     
     # Возвращаем результат
