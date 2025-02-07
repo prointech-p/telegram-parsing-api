@@ -98,6 +98,7 @@ def get_structured_data(raw_data, data_date):
 
 # Основная функция для парсинга каждого поста отдельно
 async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, ai_model):
+    client1 = Client()
     # Получаем посты из Telegram
     posts = await get_tg_posts(channel_username, posts_count)
     result = []
@@ -120,19 +121,19 @@ async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, a
         
         ai_response = ""
         for item in sub_posts:
-            response = client.chat.completions.create(
+            response = client1.chat.completions.create(
                 model="gpt-4",
                 provider=g4f.Provider.Copilot,
                 messages=[
                     {
-                        # "role": "user",
-                        "role": "assistant",
+                        "role": "user",
+                        # "role": "assistant",
                         "content": base_prompt + ' ' + item
                     }
                     ]
             )
 
-            ai_response = ai_response + response.choices[0].message["content"]
+            ai_response = ai_response + response.choices[0].message.content
 
         # Структурируем данные
         parsed_data = get_structured_data(ai_response, data_date)
@@ -234,7 +235,7 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
 async def parse_channel(request: ParseRequest):
     try:
         # Парсим данные
-        if request.channel_username == "":
+        if request.channel_username == "@ASICMINERether77":
             result = await parse_tg_channel_scminer(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
         else:
             result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
