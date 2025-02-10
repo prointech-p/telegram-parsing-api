@@ -4,3 +4,4 @@ telethon
 g4f
 python-dotenv
 curl-cffi
+openai

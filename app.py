@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from g4f.client import Client 
 import g4f
 from pprint import pprint
+from openai import OpenAI
 
 
 # Загружаем переменные из .env
@@ -21,6 +22,7 @@ app = FastAPI()
 api_id = os.getenv("API_ID")
 api_hash = os.getenv("API_HASH")
 session_str = os.getenv("SESSION_STR")
+openai_api_key=os.environ.get("OPENAI_API_KEY")
 
 # Инициализация клиента Telethon
 client = TelegramClient(StringSession(session_str), api_id, api_hash)
@@ -78,6 +80,25 @@ def process_prompt(prompt, ai_model):
 
     # return response.choices[0].message.content
     return full_response
+
+
+# Генерация текста согласно промпту
+def process_prompt_openai(prompt, ai_model="gpt-4o-mini"):
+   
+    client1 = OpenAI(api_key=openai_api_key)
+
+
+    response = client1.chat.completions.create(
+        model=ai_model,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+    )
+
+    return response.choices[0].message.content
 
 
 # Преобразование в структурированные данные
@@ -153,14 +174,17 @@ async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, a
 
 
 # Основная функция для парсинга каждого поста отдельно
-async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai_model):
+async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai_model="gpt-4", alg='g4f'):
     # Получаем посты из Telegram
     posts = await get_tg_posts(channel_username, posts_count)
     result = ["test"]
     for post in posts:
         post_str = "<Start_of_post>. " + post["text"]
 
-        ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
+        if alg == 'openai':
+            ai_response = process_prompt_openai(f"{base_prompt} {post_str}")
+        else:
+             ai_response = process_prompt(f"{base_prompt} {post_str}", ai_model)
 
     #     # Структурируем данные
         parsed_data = get_structured_data(ai_response, post["date"])
@@ -240,13 +264,37 @@ async def parse_channel(request: ParseRequest):
     try:
         # Парсим данные
         if request.channel_username == "@ASICMINERether77":
-            result = await parse_tg_channel_scminer(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
+            result = await parse_tg_channel_scminer(
+                channel_username=request.channel_username, 
+                posts_count=request.posts_count, 
+                base_prompt=request.base_prompt, 
+                ai_model=request.ai_model)
         else:
-            result = await parse_tg_channel_detail(request.channel_username, request.posts_count, request.base_prompt, request.ai_model)
+            result = await parse_tg_channel_detail(
+                channel_username=request.channel_username, 
+                posts_count=request.posts_count, 
+                base_prompt=request.base_prompt, 
+                ai_model=request.ai_model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
+# Маршрут для парсинга
+@app.post("/parse-tg-channel-openai")
+async def parse_channel(request: ParseRequest):
+    try:
+        # Парсим данные
+        result = await parse_tg_channel_detail(
+            channel_username=request.channel_username, 
+            posts_count=request.posts_count, 
+            base_prompt=request.base_prompt, 
+            ai_model="gpt-4o-mini",
+            alg='openai')
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Маршрут для парсинга
 # @app.post("/parse-tg-channel-by-parts")
