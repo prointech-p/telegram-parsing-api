@@ -193,11 +193,19 @@ async def parse_tg_channel_detail(channel_username, posts_count, base_prompt, ai
     #     # Структурируем данные
         parsed_data = get_structured_data(ai_response, post["date"])
 
-        result.append({
-            'post': post_str,
-            'ai_response': ai_response,
-            'parsed_data': parsed_data
-        })
+        # result.append({
+        #     'post': post_str,
+        #     'ai_response': ai_response,
+        #     'parsed_data': parsed_data
+        # })
+        result.insert(
+            0, 
+            {
+                'post': post["text"],
+                'ai_response': ai_response,
+                'parsed_data': parsed_data
+            }
+        )
     
     # Возвращаем результат
     return result
