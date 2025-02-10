@@ -164,11 +164,14 @@ async def parse_tg_channel_scminer(channel_username, posts_count, base_prompt, a
         # Структурируем данные
         parsed_data = get_structured_data(ai_response, data_date)
 
-        result.append({
-            'post': post["text"],
-            'ai_response': ai_response,
-            'parsed_data': parsed_data
-        })
+        result.insert(
+            0, 
+            {
+                'post': post["text"],
+                'ai_response': ai_response,
+                'parsed_data': parsed_data
+            }
+        )
     
     # Возвращаем результат
     return result
