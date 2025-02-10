@@ -107,10 +107,11 @@ def get_structured_data(raw_data, data_date):
     for line in raw_data.split("\n"):
         parts = line.split("===")
         if len(parts) == 5:
+            price = parts[2].strip().replace(".", ",").replace(" ", "")
             result.append({
                 "brand": parts[0].strip(),
                 "name": parts[1].strip(),
-                "price": parts[2].strip(),
+                "price": price,
                 "date": data_date,
                 "stock": parts[3].strip(),
                 "currency": parts[4].strip()
